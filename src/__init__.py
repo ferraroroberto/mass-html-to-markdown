@@ -1,0 +1,1 @@
+"""Product comparator ingestion pipeline."""

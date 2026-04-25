@@ -1,0 +1,30 @@
+{
+  "name": "thead_plain",
+  "description": "Product names in <thead><th>, feature name in first <td>, values in <td> positional columns. Matches typical W3Schools / GeeksforGeeks comparison markup.",
+  "product_names": {
+    "product_a": [
+      { "type": "text", "selector": "table.comparison-table thead th:nth-of-type(2)" },
+      { "type": "filename_group", "group": "product_a" }
+    ],
+    "product_b": [
+      { "type": "text", "selector": "table.comparison-table thead th:nth-of-type(3)" },
+      { "type": "filename_group", "group": "product_b" }
+    ]
+  },
+  "metadata": {
+    "category":     { "type": "attr", "selector": "meta[name='category']",     "attr": "content" },
+    "last_updated": { "type": "attr", "selector": "meta[name='last-updated']", "attr": "content" }
+  },
+  "table": {
+    "selector":              "table.comparison-table",
+    "row_selector":          "tbody tr",
+    "feature_cell":          "td:nth-of-type(1)",
+    "feature_category_attr": null,
+    "value_a_cell":          "td:nth-of-type(2)",
+    "value_b_cell":          "td:nth-of-type(3)"
+  },
+  "value_normalizers": [
+    { "pattern": "^\\s*(✓|✔|yes|true)\\s*$",   "flags": "i", "replace": "yes" },
+    { "pattern": "^\\s*(✗|❌|x|no|false)\\s*$", "flags": "i", "replace": "no"  }
+  ]
+}

@@ -1,0 +1,30 @@
+# Secrets & config
+.env
+config.json
+
+# Data outputs
+data/db/*.db
+data/db/*.db-journal
+data/markdown/*.md
+
+# Temp / runtime
+tmp/*
+!tmp/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

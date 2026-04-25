@@ -1,0 +1,30 @@
+{
+  "name": "default",
+  "description": "Matches <table class='comparison'> with custom td classes. Use for sample files AlphaPro/BetaMax/GammaElite.",
+  "product_names": {
+    "product_a": [
+      { "type": "attr", "selector": "h1", "attr": "data-product-a" },
+      { "type": "filename_group", "group": "product_a" }
+    ],
+    "product_b": [
+      { "type": "attr", "selector": "h1", "attr": "data-product-b" },
+      { "type": "filename_group", "group": "product_b" }
+    ]
+  },
+  "metadata": {
+    "category":     { "type": "attr", "selector": "meta[name='category']",     "attr": "content" },
+    "last_updated": { "type": "attr", "selector": "meta[name='last-updated']", "attr": "content" }
+  },
+  "table": {
+    "selector":              "table.comparison",
+    "row_selector":          "tbody tr",
+    "feature_cell":          "td.feature",
+    "feature_category_attr": "data-category",
+    "value_a_cell":          "td.value-a",
+    "value_b_cell":          "td.value-b"
+  },
+  "value_normalizers": [
+    { "pattern": "^\\s*(✓|✔|yes|true)\\s*$",   "flags": "i", "replace": "yes" },
+    { "pattern": "^\\s*(✗|❌|x|no|false)\\s*$", "flags": "i", "replace": "no"  }
+  ]
+}
