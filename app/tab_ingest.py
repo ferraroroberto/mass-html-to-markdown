@@ -77,7 +77,7 @@ def render_ingest_tab() -> None:
         m1.metric("Parsed", ok)
         m2.metric("Skipped", skipped)
         m3.metric("Errors", errors)
-        status_placeholder.dataframe(df, use_container_width=True, hide_index=True)
+        status_placeholder.dataframe(df, width="stretch", hide_index=True)
 
     st.divider()
     with st.expander("Sample file list"):

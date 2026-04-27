@@ -34,7 +34,7 @@ def render_browse_tab() -> None:
             | df["product_b"].str.lower().str.contains(q)
             | df["filename"].str.lower().str.contains(q)
         ]
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(df, width="stretch", hide_index=True)
 
     st.subheader("Drill into a comparison")
     ids = [c["id"] for c in comparisons]
@@ -58,6 +58,6 @@ def render_browse_tab() -> None:
                 st.write(f"**Features ({len(detail['features'])})**")
                 st.dataframe(
                     pd.DataFrame(detail["features"]),
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                 )
