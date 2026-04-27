@@ -111,7 +111,7 @@ def _cli() -> int:
             profile=profile_path,
         )
         for r in results:
-            print(f"[{r.status:>7}] {r.filename}  {r.message}")
+            logger.info("[%7s] %s  %s", r.status, r.filename, r.message)
         errors = sum(1 for r in results if r.status == "error")
         return 1 if errors else 0
     return 1
