@@ -5,19 +5,19 @@ from __future__ import annotations
 import logging
 import os
 from logging.handlers import RotatingFileHandler
-from pathlib import Path
 
 from .config import load_config, resolve_path
 
 
+_ROOT_LOGGER_NAME = "comparator"
 _configured = False
 
 
-def get_logger(name: str = "comparator") -> logging.Logger:
+def _configure_root() -> None:
+    """Configure the single root logger ('comparator') exactly once."""
     global _configured
-    logger = logging.getLogger(name)
     if _configured:
-        return logger
+        return
 
     cfg = load_config()
     log_dir = resolve_path(cfg["paths"]["log_dir"])
@@ -25,7 +25,6 @@ def get_logger(name: str = "comparator") -> logging.Logger:
 
     level_name = os.environ.get("LOG_LEVEL", "INFO").upper()
     level = getattr(logging, level_name, logging.INFO)
-    logger.setLevel(level)
 
     fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
@@ -37,9 +36,27 @@ def get_logger(name: str = "comparator") -> logging.Logger:
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(fmt)
 
-    logger.addHandler(file_handler)
-    logger.addHandler(stream_handler)
-    logger.propagate = False
+    root = logging.getLogger(_ROOT_LOGGER_NAME)
+    root.setLevel(level)
+    root.addHandler(file_handler)
+    root.addHandler(stream_handler)
+    root.propagate = False
 
     _configured = True
-    return logger
+
+
+def get_logger(name: str = _ROOT_LOGGER_NAME) -> logging.Logger:
+    """Return a logger for *name*.
+
+    The first call configures the 'comparator' parent logger with file and
+    stream handlers.  All subsequent calls — regardless of *name* — return
+    a child logger (e.g. 'comparator.src.parser') that propagates to the
+    already-configured parent, so every module's records reach both handlers.
+    """
+    _configure_root()
+
+    # Ensure child loggers sit under the configured root so propagation works.
+    if name != _ROOT_LOGGER_NAME and not name.startswith(_ROOT_LOGGER_NAME + "."):
+        name = f"{_ROOT_LOGGER_NAME}.{name}"
+
+    return logging.getLogger(name)
