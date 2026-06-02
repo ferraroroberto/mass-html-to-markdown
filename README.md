@@ -6,7 +6,7 @@ RAG-optimized Markdown for downstream retrieval.
 ## Layout
 
 ```
-rag_comparator/
+mass-html-to-markdown/
 ├── app/                      Streamlit admin (horizontal tabs, thin UI layer)
 │   ├── app.py                entrypoint
 │   ├── tab_ingest.py
@@ -27,8 +27,6 @@ rag_comparator/
 │   └── db/                   SQLite database (gitignored)
 ├── tests/
 │   └── test_pipeline.py
-├── docs/
-│   └── PROMPT_FOR_LLM.md     master prompt to hand to an LLM
 ├── tmp/.gitkeep
 ├── config.json.example
 ├── config.json               gitignored; auto-created from example
@@ -161,9 +159,3 @@ Chunk at H2 for the retriever, with H3 as overlap.
 - Ingestion is **idempotent** (content-hash check); safe to re-run.
 - One bad HTML file does not abort a 200-file batch.
 - Deterministic Markdown output (same HTML → byte-identical `.md`).
-
-## Handing off to an LLM
-
-`docs/PROMPT_FOR_LLM.md` is the master prompt to feed Claude / GPT when you want
-to replace the sample parser with a real one. It spells out the contract,
-deliverables, and acceptance checklist.

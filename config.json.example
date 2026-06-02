@@ -7,8 +7,6 @@
   },
   "ingestion": {
     "profile": "data/profiles/default.json",
-    "force_reingest": false,
-    "limit": null,
     "filename_pattern": "(?P<product_a>[^_]+)_vs_(?P<product_b>[^.]+)\\.html"
   },
   "markdown": {
@@ -16,7 +14,6 @@
     "include_overview_paragraph": true
   },
   "app": {
-    "title": "Product Comparator — Admin",
-    "page_size": 25
+    "title": "Product Comparator — Admin"
   }
 }
