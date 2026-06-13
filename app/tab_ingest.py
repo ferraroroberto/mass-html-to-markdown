@@ -21,11 +21,12 @@ def render_ingest_tab() -> None:
             "HTML input folder",
             value=cfg["paths"]["html_input_dir"],
             help="Folder containing the *.html comparison pages.",
+            key="ingest_input_dir",
         )
     with col2:
-        force = st.checkbox("Force re-ingest", value=False)
+        force = st.checkbox("Force re-ingest", value=False, key="ingest_force")
     with col3:
-        limit_str = st.text_input("Limit", value="", placeholder="all")
+        limit_str = st.text_input("Limit", value="", placeholder="all", key="ingest_limit")
 
     profiles = list_profiles()
     active = active_profile_path()
@@ -40,6 +41,7 @@ def render_ingest_tab() -> None:
             index=default_idx,
             format_func=lambda s: labels[s],
             help="Swap in a different profile to parse a different HTML template.",
+            key="ingest_profile",
         )
         profile_override = Path(picked) if picked != str(active) else None
     else:
@@ -50,7 +52,7 @@ def render_ingest_tab() -> None:
     files = sorted(input_path.glob("*.html")) if input_path.exists() else []
     st.info(f"Found **{len(files)}** HTML files in `{input_path}`")
 
-    if st.button("🚀 Run ingestion", type="primary", disabled=not files):
+    if st.button("🚀 Run ingestion", type="primary", disabled=not files, key="ingest_run"):
         limit = int(limit_str) if limit_str.strip().isdigit() else None
 
         progress_bar = st.progress(0.0, text="Starting...")

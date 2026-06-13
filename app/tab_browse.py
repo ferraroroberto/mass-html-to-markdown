@@ -25,7 +25,7 @@ def render_browse_tab() -> None:
     c3.metric("Features (first 50)", total_features)
 
     st.subheader("Comparisons")
-    query = st.text_input("Filter by product name", "")
+    query = st.text_input("Filter by product name", "", key="browse_filter")
     df = pd.DataFrame(comparisons)
     if query:
         q = query.lower()
@@ -43,7 +43,7 @@ def render_browse_tab() -> None:
         for c in comparisons
     }
     picked = st.selectbox(
-        "Select", options=ids, format_func=lambda i: labels[i]
+        "Select", options=ids, format_func=lambda i: labels[i], key="browse_drilldown"
     )
     if picked:
         detail = get_comparison(picked)
