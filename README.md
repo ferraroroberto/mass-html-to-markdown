@@ -16,16 +16,20 @@ mass-html-to-markdown/
 ├── src/                      business logic (no Streamlit imports)
 │   ├── config.py             config.json loader
 │   ├── models.py             Pydantic data contracts
-│   ├── parser.py             HTML → ParsedComparison  ← REPLACE FOR REAL HTML
+│   ├── parser.py             HTML → ParsedComparison  ← edit only for new strategy types; usually write a profile instead
 │   ├── database.py           SQLite persistence
 │   ├── markdown_gen.py       RAG-optimized Markdown template
 │   ├── pipeline.py           orchestrator + CLI
 │   └── logging_utils.py
 ├── data/
 │   ├── html/                 input HTML files
+│   ├── profiles/             extraction profiles (JSON); one per HTML template
+│   │   ├── default.json      standard <table class="comparison"> layout
+│   │   └── thead_plain.json  <thead>-based layout (W3Schools / GeeksforGeeks style)
 │   ├── markdown/             generated .md files (gitignored)
 │   └── db/                   SQLite database (gitignored)
 ├── tests/
+│   ├── sample_data/          bundled HTML fixtures used by the test suite
 │   └── test_pipeline.py
 ├── tmp/.gitkeep
 ├── config.json.example
@@ -39,20 +43,42 @@ mass-html-to-markdown/
 ## Quickstart
 
 ```bash
+# Create the virtual environment
 python -m venv .venv
-source .venv/bin/activate         # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+
+# Install dependencies (invoke via the venv Python directly — do not activate)
+# Windows:
+& .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+# POSIX:
+./.venv/bin/python -m pip install -r requirements.txt
+
+# Copy config and env files
+cp config.json.example config.json
+cp .env.example .env          # edit LOG_LEVEL or API keys as needed
 
 # 1. Run the pipeline on the bundled sample data (3 files)
-python -m src.pipeline ingest
+# Windows:
+& .\.venv\Scripts\python.exe -m src.pipeline ingest
+# POSIX:
+./.venv/bin/python -m src.pipeline ingest
 
 # 2. Inspect the generated Markdown
 ls data/markdown/
 
 # 3. Launch the admin UI
-streamlit run app/app.py
-#   …or on Windows: launch_app.bat
+# Windows: launch_app.bat
+#   POSIX: ./.venv/bin/python -m streamlit run app/app.py
 ```
+
+### Environment
+
+Copy `.env.example` to `.env` (gitignored) before the first run. Supported variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `LOG_LEVEL` | `INFO` | Python logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
+| `ANTHROPIC_API_KEY` | *(empty)* | Optional — only needed if you wire an LLM step into the pipeline |
+| `OPENAI_API_KEY` | *(empty)* | Optional — only needed if you wire an LLM step into the pipeline |
 
 ## Adapting to your real HTML
 
