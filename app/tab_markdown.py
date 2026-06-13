@@ -24,6 +24,7 @@ def render_markdown_tab() -> None:
         "Select a comparison",
         options=[c["id"] for c in comparisons],
         format_func=lambda i: labels[i],
+        key="md_select",
     )
     row = next(c for c in comparisons if c["id"] == picked)
     md_path_raw = row.get("markdown_path")
@@ -38,7 +39,7 @@ def render_markdown_tab() -> None:
 
     st.caption(f"📄 `{md_path}`")
     mode = st.radio(
-        "View mode", ["Rendered", "Raw"], horizontal=True, label_visibility="collapsed"
+        "View mode", ["Rendered", "Raw"], horizontal=True, label_visibility="collapsed", key="md_viewmode"
     )
     content = md_path.read_text(encoding="utf-8")
     if mode == "Rendered":
@@ -46,5 +47,5 @@ def render_markdown_tab() -> None:
     else:
         st.code(content, language="markdown")
     st.download_button(
-        "⬇️ Download .md", content, file_name=md_path.name, mime="text/markdown"
+        "⬇️ Download .md", content, file_name=md_path.name, mime="text/markdown", key="md_download"
     )

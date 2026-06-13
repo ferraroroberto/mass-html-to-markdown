@@ -18,10 +18,11 @@ def render_config_tab() -> None:
         value=json.dumps(cfg, indent=2),
         height=400,
         label_visibility="collapsed",
+        key="config_textarea",
     )
 
     col1, col2 = st.columns([1, 4])
-    if col1.button("💾 Save", type="primary"):
+    if col1.button("💾 Save", type="primary", key="config_save"):
         try:
             new_cfg = json.loads(text)
             save_config(new_cfg)
