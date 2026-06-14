@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from src.database import get_comparison, list_comparisons, list_products
+from src.database import count_features, get_comparison, list_comparisons, list_products
 
 
 def render_browse_tab() -> None:
@@ -19,10 +19,7 @@ def render_browse_tab() -> None:
     c1, c2, c3 = st.columns(3)
     c1.metric("Comparisons", len(comparisons))
     c2.metric("Unique products", len(products))
-    total_features = sum(
-        len(get_comparison(c["id"])["features"]) for c in comparisons[:50]
-    )
-    c3.metric("Features (first 50)", total_features)
+    c3.metric("Features (first 50)", count_features(limit=50))
 
     st.subheader("Comparisons")
     query = st.text_input("Filter by product name", "", key="browse_filter")

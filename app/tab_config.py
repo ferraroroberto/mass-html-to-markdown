@@ -21,7 +21,7 @@ def render_config_tab() -> None:
         key="config_textarea",
     )
 
-    col1, col2 = st.columns([1, 4])
+    col1, _ = st.columns([1, 4])
     if col1.button("💾 Save", type="primary", key="config_save"):
         try:
             new_cfg = json.loads(text)
