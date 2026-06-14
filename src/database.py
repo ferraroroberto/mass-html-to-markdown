@@ -192,6 +192,22 @@ def get_comparison(comparison_id: int) -> Optional[dict]:
     return out
 
 
+def count_features(limit: Optional[int] = None) -> int:
+    """Return total feature count, optionally scoped to the most recent *limit* comparisons."""
+    with connect() as conn:
+        if limit is None:
+            row = conn.execute("SELECT COUNT(*) FROM features").fetchone()
+        else:
+            row = conn.execute(
+                """SELECT COUNT(*) FROM features
+                   WHERE comparison_id IN (
+                       SELECT id FROM comparisons ORDER BY updated_at DESC LIMIT ?
+                   )""",
+                (limit,),
+            ).fetchone()
+    return row[0]
+
+
 def list_products() -> list[dict]:
     with connect() as conn:
         rows = conn.execute(
