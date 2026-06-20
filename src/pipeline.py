@@ -13,11 +13,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional
 
-from .config import load_config, resolve_path
-from .database import existing_hash, init_db, upsert_comparison
-from .logging_utils import get_logger
-from .markdown_gen import write_markdown
-from .parser import parse_html, set_profile_override
+from dotenv import load_dotenv
+
+# Populate os.environ from .env before any local import runs — importing
+# .database / .logging_utils below configures logging at module load time and
+# reads LOG_LEVEL, so .env must be loaded first for the documented var to apply.
+load_dotenv()
+
+from .config import load_config, resolve_path  # noqa: E402
+from .database import existing_hash, init_db, upsert_comparison  # noqa: E402
+from .logging_utils import get_logger  # noqa: E402
+from .markdown_gen import write_markdown  # noqa: E402
+from .parser import parse_html, set_profile_override  # noqa: E402
 
 
 logger = get_logger(__name__)
