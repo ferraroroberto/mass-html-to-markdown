@@ -19,7 +19,7 @@ def render_browse_tab() -> None:
     c1, c2, c3 = st.columns(3)
     c1.metric("Comparisons", len(comparisons))
     c2.metric("Unique products", len(products))
-    c3.metric("Features (first 50)", count_features(limit=50))
+    c3.metric("Features (recent 50 comparisons)", count_features(limit=50))
 
     st.subheader("Comparisons")
     query = st.text_input("Filter by product name", "", key="browse_filter")
