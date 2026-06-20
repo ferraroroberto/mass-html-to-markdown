@@ -15,6 +15,11 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from dotenv import load_dotenv  # noqa: E402
+
+# Load .env before any src import configures logging / reads LOG_LEVEL.
+load_dotenv()
+
 from src.config import load_config  # noqa: E402
 
 from tab_ingest import render_ingest_tab  # noqa: E402

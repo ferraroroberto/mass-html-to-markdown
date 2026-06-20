@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime, timezone
 from pathlib import Path
 
 from .config import load_config, resolve_path
@@ -28,9 +27,12 @@ def render_markdown(parsed: ParsedComparison) -> str:
     if parsed.metadata.get("category"):
         lines.append(f'category: "{_escape(parsed.metadata["category"])}"')
     lines.append(f'source_file: "{parsed.filename}"')
-    lines.append(
-        f'ingested_at: "{datetime.now(timezone.utc).isoformat(timespec="seconds")}"'
-    )
+    # NOTE: deliberately no `ingested_at` here. A wall-clock timestamp in the
+    # rendered body would break the "same HTML -> byte-identical .md" invariant
+    # (README "Design principles") and make --force re-ingests rewrite every
+    # file with a new value. Ingestion timing is provenance that already lives
+    # in the database (comparisons.created_at / updated_at), which is the right
+    # home for mutable metadata; `source_file` covers origin provenance here.
     lines.append("---")
     lines.append("")
 

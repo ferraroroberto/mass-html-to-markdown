@@ -58,6 +58,20 @@ def test_markdown_contains_frontmatter_and_table():
     assert "## At a glance" in md
 
 
+def test_markdown_is_byte_identical_across_renders():
+    """Design-principle invariant: same HTML -> byte-identical Markdown.
+
+    Re-parsing then re-rendering the same file (as a --force re-ingest does)
+    must yield exactly the same bytes, so no wall-clock value may leak into
+    the output.
+    """
+    first = render_markdown(parse_html(SAMPLE))
+    second = render_markdown(parse_html(SAMPLE))
+    assert first == second
+    # Guard the specific regression: no non-deterministic ingest timestamp.
+    assert "ingested_at" not in first
+
+
 # --- Alt profile against a differently-structured file --- #
 
 def test_alt_profile_parses_thead_structure():
