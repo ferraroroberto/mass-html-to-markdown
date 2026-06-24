@@ -25,6 +25,7 @@ from src.config import load_config  # noqa: E402
 from tab_ingest import render_ingest_tab  # noqa: E402
 from tab_browse import render_browse_tab  # noqa: E402
 from tab_markdown import render_markdown_tab  # noqa: E402
+from tab_summarize import render_summarize_tab  # noqa: E402
 from tab_config import render_config_tab  # noqa: E402
 
 
@@ -40,8 +41,8 @@ def main() -> None:
         "Ingest HTML product comparisons → SQLite + RAG-ready Markdown."
     )
 
-    tab_ing, tab_brw, tab_md, tab_cfg = st.tabs(
-        ["📥 Ingest", "🔎 Browse", "📝 Markdown preview", "⚙️ Config"]
+    tab_ing, tab_brw, tab_md, tab_sum, tab_cfg = st.tabs(
+        ["📥 Ingest", "🔎 Browse", "📝 Markdown preview", "✂️ Summarize", "⚙️ Config"]
     )
     with tab_ing:
         render_ingest_tab()
@@ -49,6 +50,8 @@ def main() -> None:
         render_browse_tab()
     with tab_md:
         render_markdown_tab()
+    with tab_sum:
+        render_summarize_tab()
     with tab_cfg:
         render_config_tab()
 

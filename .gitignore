@@ -6,6 +6,8 @@ config.json
 data/db/*.db
 data/db/*.db-journal
 data/markdown/*.md
+data/markdown/full/
+data/markdown/short/
 
 # Temp / runtime
 tmp/*

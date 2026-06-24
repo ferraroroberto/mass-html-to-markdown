@@ -9,8 +9,31 @@ from .config import load_config, resolve_path
 from .models import ParsedComparison
 
 
-def render_markdown(parsed: ParsedComparison) -> str:
-    """Render a comparison into Markdown optimized for retrieval."""
+VARIANTS = ("full", "short")
+
+
+def _value(f, side: str, variant: str):
+    """Pick the value for a feature side ('a'/'b') and variant ('full'/'short').
+
+    The short variant uses the abbreviated value, falling back to the raw value
+    when no abbreviation exists (e.g. before the abbreviation pass has run), so a
+    short render never silently drops content.
+    """
+    raw = getattr(f, f"value_{side}_raw")
+    if variant == "short":
+        return getattr(f, f"value_{side}_abbreviated") or raw
+    return raw
+
+
+def render_markdown(parsed: ParsedComparison, variant: str = "full") -> str:
+    """Render a comparison into Markdown optimized for retrieval.
+
+    ``variant`` selects which feature text to emit: ``"full"`` (verbatim raw
+    values) or ``"short"`` (LLM-abbreviated values, issue #20). The structural
+    skeleton — frontmatter, tables, headers — is identical across variants.
+    """
+    if variant not in VARIANTS:
+        raise ValueError(f"Unknown variant {variant!r}; expected one of {VARIANTS}")
     cfg = load_config()
     md_cfg = cfg.get("markdown", {})
 
@@ -58,7 +81,8 @@ def render_markdown(parsed: ParsedComparison) -> str:
     lines.append("|---|---|---|")
     for f in parsed.features:
         lines.append(
-            f"| {_cell(f.name)} | {_cell(f.value_a_raw)} | {_cell(f.value_b_raw)} |"
+            f"| {_cell(f.name)} | {_cell(_value(f, 'a', variant))} "
+            f"| {_cell(_value(f, 'b', variant))} |"
         )
     lines.append("")
 
@@ -73,8 +97,8 @@ def render_markdown(parsed: ParsedComparison) -> str:
         lines.append("")
         for f in rows:
             lines.append(f"#### {f.name}")
-            lines.append(f"- **{parsed.product_a}**: {f.value_a_raw or 'n/a'}")
-            lines.append(f"- **{parsed.product_b}**: {f.value_b_raw or 'n/a'}")
+            lines.append(f"- **{parsed.product_a}**: {_bullet(_value(f, 'a', variant))}")
+            lines.append(f"- **{parsed.product_b}**: {_bullet(_value(f, 'b', variant))}")
             if f.winner == "A":
                 lines.append(f"- **Edge**: {parsed.product_a}")
             elif f.winner == "B":
@@ -104,15 +128,22 @@ def render_markdown(parsed: ParsedComparison) -> str:
     return "\n".join(lines)
 
 
-def write_markdown(parsed: ParsedComparison) -> Path:
-    """Write the Markdown file to disk and return the path."""
+def variant_dir(variant: str = "full") -> Path:
+    """Resolve the output directory for a variant: ``<markdown_output_dir>/<variant>``."""
+    if variant not in VARIANTS:
+        raise ValueError(f"Unknown variant {variant!r}; expected one of {VARIANTS}")
     cfg = load_config()
-    out_dir = resolve_path(cfg["paths"]["markdown_output_dir"])
+    return resolve_path(cfg["paths"]["markdown_output_dir"]) / variant
+
+
+def write_markdown(parsed: ParsedComparison, variant: str = "full") -> Path:
+    """Write the Markdown file for *variant* to its subfolder and return the path."""
+    out_dir = variant_dir(variant)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     stem = Path(parsed.filename).stem
     out_path = out_dir / f"{stem}.md"
-    out_path.write_text(render_markdown(parsed), encoding="utf-8")
+    out_path.write_text(render_markdown(parsed, variant=variant), encoding="utf-8")
     return out_path
 
 
@@ -128,3 +159,11 @@ def _cell(text) -> str:
     if text is None:
         return ""
     return str(text).replace("|", "\\|").replace("\n", " ")
+
+
+def _bullet(text) -> str:
+    """Render a value for a feature bullet — newlines collapsed so abbreviated
+    text can never split one bullet into many and break the skeleton."""
+    if not text:
+        return "n/a"
+    return str(text).replace("\n", " ")

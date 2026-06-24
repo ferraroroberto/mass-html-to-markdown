@@ -4,4 +4,4 @@
 # description, exposed services). Schema: fleet-config/architecture/README.md.
 layer       = "working-pipe"
 icon        = "🧾"
-description = "HTML → SQLite → Markdown."
+description = "HTML → SQLite → Markdown (+ LLM-shortened variant)."

@@ -6,8 +6,8 @@ from pathlib import Path
 
 import streamlit as st
 
-from src.config import resolve_path
 from src.database import list_comparisons
+from src.markdown_gen import variant_dir
 
 
 def render_markdown_tab() -> None:
@@ -20,21 +20,30 @@ def render_markdown_tab() -> None:
         c["id"]: f"#{c['id']} — {c['product_a']} vs {c['product_b']}"
         for c in comparisons
     }
-    picked = st.selectbox(
-        "Select a comparison",
-        options=[c["id"] for c in comparisons],
-        format_func=lambda i: labels[i],
-        key="md_select",
-    )
+    top = st.columns([3, 1])
+    with top[0]:
+        picked = st.selectbox(
+            "Select a comparison",
+            options=[c["id"] for c in comparisons],
+            format_func=lambda i: labels[i],
+            key="md_select",
+        )
+    with top[1]:
+        variant = st.radio(
+            "Variant", ["full", "short"], horizontal=True, key="md_variant"
+        )
     row = next(c for c in comparisons if c["id"] == picked)
-    md_path_raw = row.get("markdown_path")
-    if not md_path_raw:
-        st.warning("No Markdown file on record for this comparison.")
+    filename = row.get("filename")
+    if not filename:
+        st.warning("No source filename on record for this comparison.")
         return
 
-    md_path = resolve_path(md_path_raw)
+    md_path = variant_dir(variant) / f"{Path(filename).stem}.md"
     if not md_path.exists():
-        st.error(f"Markdown file missing at {md_path}")
+        if variant == "short":
+            st.info("No short variant yet — run the abbreviation pass in the ✂️ Summarize tab.")
+        else:
+            st.error(f"Markdown file missing at {md_path}")
         return
 
     st.caption(f"📄 `{md_path}`")

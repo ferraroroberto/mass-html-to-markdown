@@ -21,10 +21,18 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from .config import load_config, resolve_path  # noqa: E402
-from .database import existing_hash, init_db, upsert_comparison  # noqa: E402
+from .database import (  # noqa: E402
+    existing_hash,
+    init_db,
+    list_comparisons,
+    reconstruct_parsed,
+    upsert_comparison,
+)
 from .logging_utils import get_logger  # noqa: E402
-from .markdown_gen import write_markdown  # noqa: E402
+from .markdown_gen import render_markdown, write_markdown  # noqa: E402
 from .parser import parse_html, set_profile_override  # noqa: E402
+from .summarizer import run_abbreviation_pass  # noqa: E402
+from .validator import assert_same_skeleton  # noqa: E402
 
 
 logger = get_logger(__name__)
@@ -92,6 +100,26 @@ def ingest_folder(
     return results
 
 
+def render_variant(variant: str = "short", validate: bool = True) -> list[Path]:
+    """Re-render every stored comparison to *variant* Markdown from the database.
+
+    For ``short`` with ``validate``, each file's skeleton is checked against the
+    full render so structural drift surfaces immediately.
+    """
+    init_db()
+    paths: list[Path] = []
+    for c in list_comparisons():
+        parsed = reconstruct_parsed(c["id"])
+        if parsed is None:
+            continue
+        out_path = write_markdown(parsed, variant=variant)
+        if validate and variant == "short":
+            assert_same_skeleton(render_markdown(parsed, "full"), render_markdown(parsed, "short"))
+        paths.append(out_path)
+    logger.info("Rendered %d %s Markdown files", len(paths), variant)
+    return paths
+
+
 def _cli() -> int:
     cfg = load_config()
     parser = argparse.ArgumentParser(prog="pipeline")
@@ -108,6 +136,20 @@ def _cli() -> int:
     ing.add_argument("--force", action="store_true")
     ing.add_argument("--limit", type=int, default=None)
 
+    sm_cfg = cfg.get("summarization", {})
+    summ = sub.add_parser("summarize", help="Second pass: LLM-abbreviate long feature values")
+    summ.add_argument("--word-limit", type=int, default=sm_cfg.get("word_limit", 40))
+    summ.add_argument(
+        "--backend", default=sm_cfg.get("backend", "local-hub"),
+        choices=["gemini", "local-hub", "fake"],
+    )
+    summ.add_argument("--model", default=None, help="Override the backend's default model.")
+    summ.add_argument("--dry-run", action="store_true", help="Report counts only; no LLM calls.")
+
+    rnd = sub.add_parser("render", help="Re-render Markdown for a variant from the database")
+    rnd.add_argument("--variant", default="short", choices=["full", "short"])
+    rnd.add_argument("--no-validate", action="store_true", help="Skip the skeleton check.")
+
     args = parser.parse_args()
     if args.cmd == "ingest":
         profile_path = resolve_path(args.profile) if args.profile else None
@@ -121,6 +163,26 @@ def _cli() -> int:
             logger.info("[%7s] %s  %s", r.status, r.filename, r.message)
         errors = sum(1 for r in results if r.status == "error")
         return 1 if errors else 0
+
+    if args.cmd == "summarize":
+        stats = run_abbreviation_pass(
+            word_limit=args.word_limit,
+            backend=args.backend,
+            model=args.model,
+            dry_run=args.dry_run,
+        )
+        logger.info(
+            "%s — unique over-limit=%d, LLM calls=%d, cache hits=%d, cells updated=%d, errors=%d",
+            "DRY RUN" if stats.dry_run else "DONE",
+            stats.unique_long, stats.llm_calls, stats.cache_hits,
+            stats.cells_updated, len(stats.errors),
+        )
+        return 1 if stats.errors else 0
+
+    if args.cmd == "render":
+        paths = render_variant(variant=args.variant, validate=not args.no_validate)
+        logger.info("Wrote %d %s file(s)", len(paths), args.variant)
+        return 0
     return 1
 
 
