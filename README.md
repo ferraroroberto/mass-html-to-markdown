@@ -11,14 +11,17 @@ mass-html-to-markdown/
 │   ├── app.py                entrypoint
 │   ├── tab_ingest.py
 │   ├── tab_browse.py
-│   ├── tab_markdown.py
+│   ├── tab_markdown.py       preview full or short variant
+│   ├── tab_summarize.py      second pass: abbreviate feature values
 │   └── tab_config.py
 ├── src/                      business logic (no Streamlit imports)
 │   ├── config.py             config.json loader
 │   ├── models.py             Pydantic data contracts
 │   ├── parser.py             HTML → ParsedComparison  ← edit only for new strategy types; usually write a profile instead
-│   ├── database.py           SQLite persistence
-│   ├── markdown_gen.py       RAG-optimized Markdown template
+│   ├── database.py           SQLite persistence + summary cache
+│   ├── markdown_gen.py       RAG-optimized Markdown template (full / short variants)
+│   ├── summarizer.py         second-pass LLM abbreviation (gemini / local-hub / fake)
+│   ├── validator.py          full-vs-short skeleton check
 │   ├── pipeline.py           orchestrator + CLI
 │   └── logging_utils.py
 ├── data/
@@ -27,6 +30,8 @@ mass-html-to-markdown/
 │   │   ├── default.json      standard <table class="comparison"> layout
 │   │   └── thead_plain.json  <thead>-based layout (W3Schools / GeeksforGeeks style)
 │   ├── markdown/             generated .md files (gitignored)
+│   │   ├── full/             verbatim variant
+│   │   └── short/            LLM-abbreviated variant
 │   └── db/                   SQLite database (gitignored)
 ├── tests/
 │   ├── sample_data/          bundled HTML fixtures used by the test suite
@@ -77,6 +82,7 @@ Copy `.env.example` to `.env` (gitignored) before the first run. Supported varia
 | Variable | Default | Description |
 |---|---|---|
 | `LOG_LEVEL` | `INFO` | Python logging level (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
+| `GOOGLE_API_KEY` | *(empty)* | Required only for the `gemini` summarization backend (second pass). The `local-hub` and `fake` backends need no key. |
 | `ANTHROPIC_API_KEY` | *(empty)* | Optional — only needed if you wire an LLM step into the pipeline |
 | `OPENAI_API_KEY` | *(empty)* | Optional — only needed if you wire an LLM step into the pipeline |
 
@@ -175,6 +181,53 @@ Every `.md` has:
 - **Search keywords footer** — catches lexical variants of the same query.
 
 Chunk at H2 for the retriever, with H3 as overlap.
+
+## Second pass: shortened Markdown variant
+
+The first pass converts HTML → Markdown verbatim. The **second pass** produces a
+concise `short/` variant with the *same structure* — same frontmatter, tables,
+and headers — but the verbose feature text condensed to a word budget.
+
+It works at the **database** level, not on the rendered Markdown: the Markdown is
+generated *from* the `features` table, so shortening the feature values there
+yields a structurally-identical short document for free. Only the prose inside
+table value cells and feature bullets changes.
+
+How it runs (✂️ **Summarize** tab, or the CLI):
+
+1. Scan `value_a_raw` / `value_b_raw`; flag values whose word count exceeds the
+   limit (default 40).
+2. **Deduplicate** — a blurb repeated across many rows/files is summarized
+   **once** and the result fanned out to every matching cell.
+3. Each unique result is **cached** in `text_summaries`, keyed by
+   `(text_hash, word_limit, prompt_version, model)`. Re-runs make **zero** LLM
+   calls and the output stays deterministic.
+4. Render the `short/` variant from the database and **validate** that its
+   skeleton matches the full variant (only prose differs).
+
+The pass is a **separate, opt-in step** — it is never part of `ingest`, so
+re-ingesting a large batch never silently fires LLM calls.
+
+### Backends
+
+| Backend | Use | Needs |
+|---|---|---|
+| `gemini` | production | `GOOGLE_API_KEY`, `google-genai` |
+| `local-hub` | dev / offline | the local LLM hub at `127.0.0.1:8000` (Anthropic shape) |
+| `fake` | tests / quick demo | nothing — deterministic offline truncation |
+
+### CLI
+
+```bash
+# Dry run: how many unique over-limit texts, how many LLM calls that means
+python -m src.pipeline summarize --backend fake --dry-run
+
+# Run the pass (writes value_*_abbreviated in the DB)
+python -m src.pipeline summarize --backend local-hub --word-limit 40
+
+# Render the short variant from the DB (validates skeleton by default)
+python -m src.pipeline render --variant short
+```
 
 ## Design principles
 

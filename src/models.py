@@ -22,6 +22,11 @@ class FeatureRow(BaseModel):
     value_b_raw: Optional[str] = None
     value_b_numeric: Optional[float] = None
     winner: Optional[str] = None  # "A", "B", "tie", or None
+    # Second-pass shortened values (issue #20). None until the abbreviation pass
+    # runs; renderers fall back to the raw value when these are unset, so a
+    # freshly-ingested comparison still renders identically to before.
+    value_a_abbreviated: Optional[str] = None
+    value_b_abbreviated: Optional[str] = None
 
 
 class ParsedComparison(BaseModel):
