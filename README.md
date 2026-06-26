@@ -201,7 +201,9 @@ How it runs (✂️ **Summarize** tab, or the CLI):
    **once** and the result fanned out to every matching cell.
 3. Each unique result is **cached** in `text_summaries`, keyed by
    `(text_hash, word_limit, prompt_version, model)`. Re-runs make **zero** LLM
-   calls and the output stays deterministic.
+   calls and the output stays deterministic. Editing the prompt in the Summarize
+   tab automatically changes the cache key, so a modified prompt always re-summarizes
+   rather than returning the previous prompt's cached output.
 4. Render the `short/` variant from the database and **validate** that its
    skeleton matches the full variant (only prose differs).
 
