@@ -75,6 +75,29 @@ def test_rerun_is_fully_cached(seeded_db):
     assert again.cache_hits == again.unique_long
 
 
+def test_edited_prompt_bypasses_cache(seeded_db):
+    """Regression for #24: the cache key folds in a hash of the actual prompt, so
+    editing the prompt re-summarizes instead of silently serving the default
+    prompt's cached rewrite. (The fake backend ignores the prompt text — what is
+    under test here is the cache identity, not the output.)"""
+    first = run_abbreviation_pass(WORD_LIMIT, backend="fake")
+    assert first.llm_calls == first.unique_long
+
+    edited = run_abbreviation_pass(
+        WORD_LIMIT, backend="fake", prompt="A deliberately different instruction."
+    )
+    # Different prompt -> different cache key -> every unique misses again.
+    assert edited.llm_calls == edited.unique_long
+    assert edited.cache_hits == 0
+
+    # Same edited prompt re-runs fully cached, proving the new key is stable.
+    again = run_abbreviation_pass(
+        WORD_LIMIT, backend="fake", prompt="A deliberately different instruction."
+    )
+    assert again.llm_calls == 0
+    assert again.cache_hits == again.unique_long
+
+
 def test_dry_run_makes_no_changes(seeded_db):
     dry = run_abbreviation_pass(WORD_LIMIT, backend="fake", dry_run=True)
     assert dry.llm_calls == dry.unique_long   # nothing cached yet -> all would call
