@@ -19,6 +19,7 @@ hub_gemini_backend).
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import time
@@ -38,8 +39,11 @@ from .logging_utils import get_logger
 
 logger = get_logger(__name__)
 
-# Bump when the prompt text below changes meaning — it is part of the cache key,
-# so a new version re-summarizes rather than serving a stale rewrite.
+# Namespace prefix for the prompt half of the cache key. The actual prompt text
+# is hashed in alongside it (see ``prompt_cache_version``), so the cache is keyed
+# by *what was actually sent* — an edited prompt re-summarizes rather than serving
+# a stale rewrite, even though the editable UI can't bump a source constant. Bump
+# this only to deliberately invalidate every cached summary regardless of prompt.
 PROMPT_VERSION = "v1"
 
 BACKENDS = ("gemini", "local-hub", "fake")
@@ -75,7 +79,9 @@ def default_model(backend: str) -> str:
 
 
 def build_prompt(word_limit: int) -> str:
-    """The instruction sent with each snippet. Keep PROMPT_VERSION in sync."""
+    """The default instruction sent with each snippet. Its text is folded into the
+    cache key (via ``prompt_cache_version``), so edits here invalidate the cache
+    automatically — no manual ``PROMPT_VERSION`` bump needed."""
     return (
         "You are condensing one cell of a product-comparison table for a "
         "retrieval index. Rewrite the text below so it is much more concise, "
@@ -84,6 +90,16 @@ def build_prompt(word_limit: int) -> str:
         "Return a single line of plain text — no markdown, no bullet points, no "
         "quotes, no preamble, just the shortened text."
     )
+
+
+def prompt_cache_version(prompt: str) -> str:
+    """Cache identity for *prompt*: the ``PROMPT_VERSION`` namespace plus a short
+    hash of the actual prompt text. The Summarize tab lets the user edit the prompt
+    at runtime, which a source-controlled ``PROMPT_VERSION`` can't track — folding
+    ``sha256(prompt)[:12]`` into the key means an edited prompt naturally misses the
+    cache instead of silently returning the default prompt's stale rewrite."""
+    digest = hashlib.sha256(prompt.encode("utf-8")).hexdigest()[:12]
+    return f"{PROMPT_VERSION}-{digest}"
 
 
 def sanitize(text: str) -> str:
@@ -216,6 +232,7 @@ def run_abbreviation_pass(
     init_db()
     model = model or default_model(backend)
     prompt = prompt or build_prompt(word_limit)
+    prompt_version = prompt_cache_version(prompt)
 
     uniques = unique_long_values(word_limit)
     stats = AbbreviationStats(
@@ -230,7 +247,7 @@ def run_abbreviation_pass(
         stats.llm_calls = sum(
             1
             for t in uniques
-            if get_cached_summary(t, word_limit, PROMPT_VERSION, model) is None
+            if get_cached_summary(t, word_limit, prompt_version, model) is None
         )
         stats.cache_hits = stats.unique_long - stats.llm_calls
         logger.info(
@@ -243,7 +260,7 @@ def run_abbreviation_pass(
     for idx, text in enumerate(uniques, start=1):
         if progress:
             progress(idx, total, text[:60])
-        cached = get_cached_summary(text, word_limit, PROMPT_VERSION, model)
+        cached = get_cached_summary(text, word_limit, prompt_version, model)
         if cached is not None:
             short = cached
             stats.cache_hits += 1
@@ -260,7 +277,7 @@ def run_abbreviation_pass(
                 logger.exception("Failed to summarize a value")
                 stats.errors.append(str(exc))
                 continue
-            put_cached_summary(text, short, word_limit, PROMPT_VERSION, model)
+            put_cached_summary(text, short, word_limit, prompt_version, model)
             stats.llm_calls += 1
         stats.cells_updated += apply_abbreviation(text, short)
 
