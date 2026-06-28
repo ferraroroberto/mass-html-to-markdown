@@ -1,7 +1,7 @@
 """End-to-end ingestion pipeline.
 
 CLI:
-    python -m src.pipeline ingest [--input PATH] [--output PATH] [--force] [--limit N]
+    python -m src.pipeline ingest [--input PATH] [--force] [--limit N]
 """
 
 from __future__ import annotations
@@ -127,7 +127,6 @@ def _cli() -> int:
 
     ing = sub.add_parser("ingest", help="Ingest HTML files")
     ing.add_argument("--input", default=cfg["paths"]["html_input_dir"])
-    ing.add_argument("--output", default=cfg["paths"]["markdown_output_dir"])
     ing.add_argument(
         "--profile",
         default=None,
