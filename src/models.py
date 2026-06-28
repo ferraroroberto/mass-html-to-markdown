@@ -2,14 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from typing import Optional
 
 from pydantic import BaseModel, Field
-
-
-def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
 
 
 class FeatureRow(BaseModel):
@@ -38,4 +33,3 @@ class ParsedComparison(BaseModel):
     metadata: dict = Field(default_factory=dict)
     features: list[FeatureRow] = Field(default_factory=list)
     source_hash: str
-    parsed_at: datetime = Field(default_factory=_utcnow)

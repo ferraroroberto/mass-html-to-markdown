@@ -13,7 +13,6 @@ from src.parser import parse_html, set_profile_override
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SAMPLE = PROJECT_ROOT / "data" / "html" / "AlphaPro_vs_BetaMax.html"
 ALT_SAMPLE = PROJECT_ROOT / "tests" / "sample_data" / "CharlieOne_vs_DeltaPlus.html"
-DEFAULT_PROFILE = PROJECT_ROOT / "data" / "profiles" / "default.json"
 ALT_PROFILE = PROJECT_ROOT / "data" / "profiles" / "thead_plain.json"
 
 
