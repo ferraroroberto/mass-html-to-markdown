@@ -148,8 +148,14 @@ new template, write a new profile; no code changes.
 4. Point `ingestion.profile` at it in `config.json` — or pass
    `--profile data/profiles/mysite.json` on the CLI, or pick it from the
    selectbox in the Ingest tab.
-5. Run `python -m src.pipeline ingest --force` and check `data/markdown/` +
-   the Browse tab.
+5. Run the ingest pipeline with `--force` and check `data/markdown/` + the
+   Browse tab:
+   ```bash
+   # Windows:
+   & .\.venv\Scripts\python.exe -m src.pipeline ingest --force
+   # POSIX:
+   ./.venv/bin/python -m src.pipeline ingest --force
+   ```
 6. If anything looks off, add a test against your sample in `tests/`.
 
 ### Multiple sources
@@ -222,13 +228,22 @@ re-ingesting a large batch never silently fires LLM calls.
 
 ```bash
 # Dry run: how many unique over-limit texts, how many LLM calls that means
-python -m src.pipeline summarize --backend fake --dry-run
+# Windows:
+& .\.venv\Scripts\python.exe -m src.pipeline summarize --backend fake --dry-run
+# POSIX:
+./.venv/bin/python -m src.pipeline summarize --backend fake --dry-run
 
 # Run the pass (writes value_*_abbreviated in the DB)
-python -m src.pipeline summarize --backend local-hub --word-limit 40
+# Windows:
+& .\.venv\Scripts\python.exe -m src.pipeline summarize --backend local-hub --word-limit 40
+# POSIX:
+./.venv/bin/python -m src.pipeline summarize --backend local-hub --word-limit 40
 
 # Render the short variant from the DB (validates skeleton by default)
-python -m src.pipeline render --variant short
+# Windows:
+& .\.venv\Scripts\python.exe -m src.pipeline render --variant short
+# POSIX:
+./.venv/bin/python -m src.pipeline render --variant short
 ```
 
 ## Design principles
