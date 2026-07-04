@@ -1,0 +1,87 @@
+%% docs/architecture.mmd — this repo's own internal structure.
+%% Hand-authored, not generated — see CLAUDE.md's "Internal architecture"
+%% section for the anti-staleness contract. Update this diagram in the same
+%% PR as any material structural change (a new pipeline stage, a new tab, a
+%% new profile-driven parser strategy, a relocated module).
+
+flowchart TB
+  subgraph input["Input"]
+    HTML["data/html/*.html\nHTML comparison pages"]
+    PROFILES["data/profiles/*.json\nprofile-driven CSS-selector rules\n(one profile per HTML template)"]
+  end
+
+  subgraph app["app/ — thin Streamlit UI (no business logic)"]
+    APPPY["app.py\nentrypoint, tab routing"]
+    TABINGEST["tab_ingest.py"]
+    TABBROWSE["tab_browse.py"]
+    TABMARKDOWN["tab_markdown.py"]
+    TABSUMMARIZE["tab_summarize.py"]
+    TABCONFIG["tab_config.py"]
+    APPPY --> TABINGEST & TABBROWSE & TABMARKDOWN & TABSUMMARIZE & TABCONFIG
+  end
+
+  subgraph src["src/ — business logic (no Streamlit imports)"]
+    CONFIG["config.py\nconfig.json loader"]
+    MODELS["models.py\nPydantic contracts:\nParsedComparison / FeatureRow"]
+    PARSER["parser.py\nHTML -> ParsedComparison\n(profile-driven strategies)"]
+    DATABASE["database.py\nSQLite persistence +\ntext_summaries cache"]
+    MARKDOWNGEN["markdown_gen.py\nRAG Markdown template\n(full / short variants)"]
+    VALIDATOR["validator.py\nfull-vs-short skeleton check"]
+    SUMMARIZER["summarizer.py\nsecond-pass LLM abbreviation\n(gemini / local-hub / fake)"]
+    PIPELINE["pipeline.py\norchestrator + CLI\n(ingest / summarize / render)"]
+    LOGGING["logging_utils.py"]
+  end
+
+  subgraph output["Output"]
+    DB["data/db/*.sqlite\ncomparisons + features +\ntext_summaries"]
+    MDFULL["data/markdown/full/*.md"]
+    MDSHORT["data/markdown/short/*.md"]
+  end
+
+  subgraph external["External dependencies"]
+    GEMINI["google-genai\n(GOOGLE_API_KEY)"]
+    LOCALHUB["local LLM hub\n127.0.0.1:8000\n(Anthropic SDK shape)"]
+    BS4["beautifulsoup4 + lxml\nHTML parsing"]
+  end
+
+  HTML --> PARSER
+  PROFILES --> PARSER
+  PARSER -->|uses| BS4
+  PARSER --> MODELS
+  MODELS --> DATABASE
+  DATABASE --> DB
+  DATABASE --> MARKDOWNGEN
+  MARKDOWNGEN --> MDFULL
+  MARKDOWNGEN --> MDSHORT
+  MARKDOWNGEN --> VALIDATOR
+  VALIDATOR -->|skeleton match| MDSHORT
+
+  DATABASE --> SUMMARIZER
+  SUMMARIZER --> GEMINI
+  SUMMARIZER --> LOCALHUB
+  SUMMARIZER -->|writes value_*_abbreviated| DATABASE
+
+  PIPELINE -->|ingest| PARSER
+  PIPELINE -->|summarize| SUMMARIZER
+  PIPELINE -->|render| MARKDOWNGEN
+
+  CONFIG --> PARSER
+  CONFIG --> DATABASE
+  CONFIG --> MARKDOWNGEN
+  CONFIG --> SUMMARIZER
+  LOGGING --> PIPELINE
+
+  TABINGEST --> PIPELINE
+  TABBROWSE --> DATABASE
+  TABMARKDOWN --> DATABASE
+  TABMARKDOWN --> MARKDOWNGEN
+  TABSUMMARIZE --> SUMMARIZER
+  TABSUMMARIZE --> PIPELINE
+  TABCONFIG --> CONFIG
+
+  subgraph tests["tests/"]
+    TESTPIPE["test_pipeline.py"]
+    TESTSUMM["test_summarize.py"]
+  end
+  TESTPIPE --> PIPELINE
+  TESTSUMM --> SUMMARIZER

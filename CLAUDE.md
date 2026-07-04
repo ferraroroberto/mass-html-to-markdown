@@ -17,3 +17,7 @@ Canonical instructions for AI coding agents working in this repository. Claude C
 ## This repository
 Streamlit pipeline that ingests HTML product-comparison pages into SQLite and emits RAG-optimized Markdown.
 See `README.md` for setup, layout, and usage.
+
+## Internal architecture
+
+[`docs/architecture.mmd`](docs/architecture.mmd) is a hand-authored Mermaid diagram of this repo's own internal structure (`app/` tabs, `src/` pipeline modules, the SQLite store, and external LLM backends). Update it in the same PR as any material structural change (a new pipeline stage, a new tab, a new profile-driven parser strategy, a relocated module) — it is not auto-generated and will otherwise drift out of sync with the code.
