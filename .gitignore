@@ -30,3 +30,5 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+# Launcher scratch (ephemeral images/logs written by the tray launcher)
+.launcher-tmp/
